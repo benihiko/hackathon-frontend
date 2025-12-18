@@ -25,7 +25,7 @@ export default function Navbar() {
             <span className="text-[10px] font-bold">ログイン</span>
           </Link>
 
-          <Link href="/sell" className="bg-gray-900 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+          <Link href="/sell" className="bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-800 transition flex items-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
             <FiCamera className="mr-2" />
             出品する
           </Link>

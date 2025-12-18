@@ -19,7 +19,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6 font-sans text-gray-900">
       <div className="max-w-6xl mx-auto">
-        {/* ヘッダーバナー */}
         <div className="flex justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
           <div>
             <h1 className="text-3xl font-extrabold text-blue-600 mb-1">売買和達</h1>
@@ -44,10 +43,10 @@ export default function HomePage() {
             {items.map((item) => (
               <Link href={`/items/${item.id}`} key={item.id} className="block group">
                 <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  {/* 自動画像エリア (Picsumを使用) */}
                   <div className="aspect-square bg-gray-200 relative overflow-hidden">
+                    {/* アップロード画像があれば優先、なければPicsum */}
                     <img 
-                      src={`https://picsum.photos/500?random=${item.id}`} 
+                      src={item.image_data ? item.image_data : `https://picsum.photos/500?random=${item.id}`} 
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
