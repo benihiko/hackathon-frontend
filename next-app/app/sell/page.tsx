@@ -59,6 +59,13 @@ export default function SellPage() {
 
   const handleListing = async () => {
     if (!isVerified) return;
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      alert("出品するにはログインしてください");
+      router.push('/login');
+      return;
+    }
     try {
       const res = await fetch('http://127.0.0.1:8000/api/items', {
         method: 'POST',
@@ -67,7 +74,9 @@ export default function SellPage() {
           title: title, 
           description: desc,
           price: parseInt(price),
-          image_data: imageData // ★画像データも送信
+          image_data: imageData,
+          user_id: parseInt(userId)
+
         }),
       });
       
