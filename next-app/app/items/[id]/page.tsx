@@ -63,7 +63,15 @@ export default function ItemDetailPage() {
     }
   };
 
-  if (!item) return <div className="p-10 text-center">読み込み中...</div>;
+  if (!item) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-white">
+        {/* ぐるぐるアニメーション */}
+        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+        <p className="text-gray-500 font-bold animate-pulse">読み込み中...</p>
+      </div>
+    );
+  }
 
   const isMyItem = currentUserId && item.seller_id && String(currentUserId) === String(item.seller_id);
 
