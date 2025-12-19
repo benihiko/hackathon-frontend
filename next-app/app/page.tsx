@@ -17,8 +17,12 @@ export default function HomePage() {
     // タブが切り替わるたびにローディングを出して再取得
     setLoading(true);
     
-    // ★修正: クエリパラメータ(?sort=...)をつけてAPIを叩く
-    fetch(`${API_URL}/api/items?sort=${activeTab}`)
+    const userId = localStorage.getItem('userId');
+    const query = userId 
+        ? `?sort=${activeTab}&user_id=${userId}` 
+        : `?sort=${activeTab}`; // ログインしてなければ送らない
+
+    fetch(`${API_URL}/api/items${query}`) // queryを使う
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setItems(data);

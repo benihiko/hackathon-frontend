@@ -12,6 +12,7 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<any>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false); // ★追加
 
   useEffect(() => {
   // ★追加: ログイン中のユーザーIDを取得
@@ -31,7 +32,39 @@ export default function ItemDetailPage() {
       .then(res => res.json())
       .then(data => setRelatedItems(data))
       .catch(err => console.error("レコメンド取得失敗:", err));
+// ★追加: 自分がいいね済みかチェック
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+        fetch(`${API_URL}/api/users/${userId}/likes`)
+            .then(res => res.json())
+            .then(data => {
+                // 配列の中にこの商品IDがあれば true
+                const found = data.find((d: any) => d.id == params.id);
+                if (found) setIsLiked(true);
+            });
+    }
   }, [params.id]);
+
+  // ★追加: いいねボタン処理
+  const toggleLike = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        alert("ログインしてください");
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/api/items/${params.id}/like`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: parseInt(userId) })
+        });
+        const data = await res.json();
+        setIsLiked(data.liked); // 結果で更新
+    } catch (e) {
+        console.error(e);
+    }
+  };
 
   // ★追加: 購入処理
   const handlePurchase = async () => {
@@ -144,9 +177,15 @@ export default function ItemDetailPage() {
                 </button>
             )}
             
-            <button className="bg-gray-100 p-4 rounded-full text-gray-500 hover:bg-pink-50 hover:text-pink-500 transition shadow-sm border border-gray-200">
-              <FiHeart className="text-2xl" />
-            </button>
+                <button 
+                  onClick={toggleLike}
+                  className={`p-4 rounded-full transition shadow-sm border border-gray-200 flex items-center justify-center ${
+                    isLiked ? 'bg-pink-50 text-pink-500 border-pink-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                  }`}
+              >
+                {/* いいね済なら塗りつぶしっぽく見せる */}
+                <FiHeart className={`text-2xl ${isLiked ? 'fill-current' : ''}`} />
+                </button>
           </div>
 
           {/* --- AIレコメンドエリア --- */}
