@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { FiArrowLeft, FiShoppingBag, FiHeart } from 'react-icons/fi';
 
 export default function ItemDetailPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // ★追加
   const params = useParams();
   const [item, setItem] = useState<any>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
 
   useEffect(() => {
     // 1. 商品詳細を取得
-    fetch(`http://127.0.0.1:8000/api/items`)
+    fetch(`${API_URL}/api/items`)
       .then(res => res.json())
       .then(data => {
         // 全件取得してからIDで探す（ハッカソン用簡易ロジック）
@@ -21,7 +22,7 @@ export default function ItemDetailPage() {
       });
 
     // 2. AIレコメンド商品を取得
-    fetch(`http://127.0.0.1:8000/api/items/${params.id}/related`)
+    fetch(`${API_URL}/api/items/${params.id}/related`)
       .then(res => res.json())
       .then(data => setRelatedItems(data))
       .catch(err => console.error("レコメンド取得失敗:", err));

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { FiLogOut, FiBox } from 'react-icons/fi';
 
 export default function MyPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // ★追加
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function MyPage() {
     setUserId(storedId);
 
     // 自分の出品商品を取得
-    fetch(`http://127.0.0.1:8000/api/users/${storedId}/items`)
+    fetch(`${API_URL}/api/users/${storedId}/items`)
       .then(res => res.json())
       .then(data => setItems(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));

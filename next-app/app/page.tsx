@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function HomePage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/items')
+    fetch(`${API_URL}/api/items`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setItems(data);

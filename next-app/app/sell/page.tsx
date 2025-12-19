@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FiCamera, FiBox, FiCheckCircle, FiAlertTriangle, FiX } from 'react-icons/fi';
 
 export default function SellPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // ★追加
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -42,7 +43,7 @@ export default function SellPage() {
     setIsVerified(false);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/ai/analyze_item', {
+      const res = await fetch(`${API_URL}/api/ai/analyze_item`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item_name: title, item_description: desc }),
@@ -67,7 +68,7 @@ export default function SellPage() {
       return;
     }
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/items', {
+      const res = await fetch(`${API_URL}/api/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
