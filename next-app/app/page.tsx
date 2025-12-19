@@ -49,8 +49,15 @@ export default function HomePage() {
                     <img 
                       src={item.image_data ? item.image_data : `https://picsum.photos/500?random=${item.id}`} 
                       alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${item.status === 'sold' ? 'opacity-60 grayscale' : ''}`}
                     />
+
+                    {/* ★新規追加: SOLDの赤い帯 (このブロックごと追加してください) */}
+                    {item.status === 'sold' && (
+                      <div className="absolute top-1/2 left-0 w-full bg-red-600/90 text-white text-center font-extrabold py-1 transform -translate-y-1/2 tracking-widest text-lg shadow-md z-10">
+                        SOLD
+                      </div>
+                    )}
                   </div>
                   
                   <div className="p-5">
