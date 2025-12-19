@@ -107,7 +107,7 @@ export default function ItemDetailPage() {
         <div className="flex items-center space-x-4 mb-6">
           <p className="text-gray-500 text-sm mb-6 flex items-center">
             <span className="bg-gray-100 px-2 py-1 rounded mr-2">カテゴリ</span>
-            {item.category_code || "未分類"}
+            {item.category_name || "未分類"}
           </p>
           <p className="text-gray-500 text-sm flex items-center">
               <FiUser className="mr-1" />
