@@ -6,6 +6,8 @@ import Link from 'next/link';
 export default function HomePage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const [items, setItems] = useState<any[]>([]);
+  // ★追加: ローディング状態を管理 (最初は true = 読み込み中)
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_URL}/api/items`)
@@ -14,8 +16,20 @@ export default function HomePage() {
         if (Array.isArray(data)) setItems(data);
         else setItems([]);
       })
-      .catch((err) => console.error("通信エラー:", err));
+      .catch((err) => console.error("通信エラー:", err))
+      // ★追加: 通信が終わったら（成功しても失敗しても）ローディングをオフにする
+      .finally(() => setLoading(false));
   }, []);
+
+  // ★追加: ローディング中は「ぐるぐる」を表示して、下のメイン画面を見せない
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-white">
+        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+        <p className="text-gray-500 font-bold animate-pulse">読み込み中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6 font-sans text-gray-900">
@@ -52,7 +66,7 @@ export default function HomePage() {
                       className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${item.status === 'sold' ? 'opacity-60 grayscale' : ''}`}
                     />
 
-                    {/* ★新規追加: SOLDの赤い帯 (このブロックごと追加してください) */}
+                    {/* SOLDの赤い帯 */}
                     {item.status === 'sold' && (
                       <div className="absolute top-1/2 left-0 w-full bg-red-600/90 text-white text-center font-extrabold py-1 transform -translate-y-1/2 tracking-widest text-lg shadow-md z-10">
                         SOLD
