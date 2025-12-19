@@ -141,7 +141,7 @@ export default function SellPage() {
                     </div>
                 </div>
 
-                <button onClick={runAiCheck} disabled={loading || !title || !desc} 
+                <button onClick={runAiCheck} disabled={loading || !title || !desc || !imageData}
                   className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl mt-8 hover:bg-blue-700 disabled:opacity-50 transition shadow-md">
                     {loading ? 'AIが診断中...' : 'AI診断を実行'}
                 </button>
