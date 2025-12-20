@@ -3,21 +3,26 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+// ★追加: FiHeart などをインポート
 import { FiArrowLeft, FiShoppingBag, FiHeart, FiUser } from 'react-icons/fi';
 
 export default function ItemDetailPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"; // ★追加
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const params = useParams();
-  const router = useRouter(); // 追加
+  const router = useRouter();
+
   const [item, setItem] = useState<any>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isLiked, setIsLiked] = useState(false); // ★追加
+  // ★追加: ユーザー状態管理
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [loading, setLoading] = useState(true); // 読み込み状態用
 
   useEffect(() => {
-  // ★追加: ログイン中のユーザーIDを取得
+    // ★追加: ユーザーIDを取得
     const storedId = localStorage.getItem('userId');
-    setCurrentUserId(storedId);
+    setUserId(storedId);
+
     // 1. 商品詳細を取得
     fetch(`${API_URL}/api/items`)
       .then(res => res.json())
@@ -25,57 +30,63 @@ export default function ItemDetailPage() {
         // 全件取得してからIDで探す（ハッカソン用簡易ロジック）
         const found = data.find((i: any) => i.id == params.id);
         setItem(found);
-      });
+      })
+      .catch(err => console.error("商品取得エラー:", err))
+      .finally(() => setLoading(false)); // 読み込み完了
 
     // 2. AIレコメンド商品を取得
     fetch(`${API_URL}/api/items/${params.id}/related`)
       .then(res => res.json())
       .then(data => setRelatedItems(data))
       .catch(err => console.error("レコメンド取得失敗:", err));
-// ★追加: 自分がいいね済みかチェック
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-        fetch(`${API_URL}/api/users/${userId}/likes`)
-            .then(res => res.json())
-            .then(data => {
-                // 配列の中にこの商品IDがあれば true
-                const found = data.find((d: any) => d.id == params.id);
-                if (found) setIsLiked(true);
-            });
+
+    // ★追加: ログイン時のみ実行する処理
+    if (storedId) {
+      const uId = parseInt(storedId);
+
+      // (A) いいね済みかチェック
+      fetch(`${API_URL}/api/users/${storedId}/likes`)
+        .then(res => res.json())
+        .then(data => {
+          const found = data.find((d: any) => d.id == params.id);
+          if (found) setIsLiked(true);
+        });
+
+      // (B) 閲覧履歴を送信 (AIレコメンド用)
+      fetch(`${API_URL}/api/items/${params.id}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uId })
+      }).catch(err => console.error("閲覧履歴送信エラー:", err));
     }
   }, [params.id]);
 
   // ★追加: いいねボタン処理
   const toggleLike = async () => {
-    const userId = localStorage.getItem('userId');
     if (!userId) {
-        alert("ログインしてください");
-        return;
+      alert("いいねするにはログインが必要です");
+      return;
     }
-    
     try {
-        const res = await fetch(`${API_URL}/api/items/${params.id}/like`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: parseInt(userId) })
-        });
-        const data = await res.json();
-        setIsLiked(data.liked); // 結果で更新
+      const res = await fetch(`${API_URL}/api/items/${params.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: parseInt(userId) })
+      });
+      const data = await res.json();
+      setIsLiked(data.liked);
     } catch (e) {
-        console.error(e);
+      console.error(e);
     }
   };
 
   // ★追加: 購入処理
   const handlePurchase = async () => {
-    const userId = localStorage.getItem('userId');
     if (!userId) {
-      alert("購入するにはログインしてください");
-      router.push('/login');
+      alert("購入するにはログインが必要です");
       return;
     }
-
-    if (!confirm("本当に購入しますか？")) return;
+    if (!confirm("この商品を購入しますか？")) return;
 
     try {
       const res = await fetch(`${API_URL}/api/items/${params.id}/purchase`, {
@@ -85,112 +96,102 @@ export default function ItemDetailPage() {
       });
 
       if (res.ok) {
-        alert("購入しました！取引画面へ移動します。");
         router.push(`/transaction/${params.id}`);
       } else {
-        const err = await res.json();
-        alert("エラー: " + err.detail);
+        const data = await res.json();
+        alert(data.detail || "購入に失敗しました");
       }
-    } catch (e) {
+    } catch (err) {
       alert("通信エラーが発生しました");
     }
   };
 
-  if (!item) {
+  // ★維持: 読み込み中のぐるぐる（スピナー）
+  if (loading || !item) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-white">
-        {/* ぐるぐるアニメーション */}
         <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
         <p className="text-gray-500 font-bold animate-pulse">読み込み中...</p>
       </div>
     );
   }
 
-  const isMyItem = currentUserId && item.seller_id && String(currentUserId) === String(item.seller_id);
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-900">
-      <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-sm">
-        {/* 画像エリア (修正済み) */}
-        <div className="bg-gray-200 h-96 flex items-center justify-center relative overflow-hidden">
-          <Link href="/" className="absolute top-4 left-4 bg-white/80 p-3 rounded-full shadow-sm hover:bg-white transition z-10">
-            <FiArrowLeft className="text-xl"/>
-          </Link>
-          
-          {/* ここを変更：画像データがあれば表示、なければPicsum */}
+    <div className="min-h-screen bg-white font-sans text-gray-900 pb-20">
+      {/* 戻るボタン */}
+      <div className="p-4">
+        <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition">
+          <FiArrowLeft size={24} />
+        </button>
+      </div>
+
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 px-6">
+        {/* 左側: 商品画像 */}
+        <div className="relative aspect-square bg-gray-100 rounded-3xl overflow-hidden shadow-inner">
           <img 
-            src={item.image_data ? item.image_data : `https://picsum.photos/600?random=${item.id}`} 
+            src={item.image_data || `https://picsum.photos/800?random=${item.id}`} 
             alt={item.title} 
-            className={`w-full h-full object-contain ${item.status === 'sold' ? 'opacity-50 grayscale' : ''}`} // SOLDなら少し暗くする
+            className="w-full h-full object-cover"
           />
-          {/* ★追加: SOLDの赤い帯 (水平) */}
           {item.status === 'sold' && (
-            <div className="absolute top-1/2 left-0 w-full bg-red-600/90 text-white text-center font-extrabold py-4 transform -translate-y-1/2 tracking-widest text-3xl shadow-lg border-y-4 border-white/30 z-20">
-              SOLD
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-white text-4xl font-black tracking-widest border-4 border-white px-6 py-2 transform -rotate-12">SOLD OUT</span>
             </div>
           )}
         </div>
 
-        <div className="p-8">
-          {/* ... (タイトルなどはそのまま) ... */}
-          <div className="flex justify-between items-start mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">{item.title}</h1>
-            {item.status === 'sold' && <span className="bg-red-600 text-white px-3 py-1 rounded-full font-bold text-sm">SOLD</span>}
+        {/* 右側: 商品情報 */}
+        <div className="flex flex-col">
+          <div className="mb-6">
+            <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full mb-2">
+              {item.category_name || "未分類"}
+            </span>
+            <h1 className="text-4xl font-black text-gray-900 leading-tight mb-2">{item.title}</h1>
+            <p className="text-3xl font-light text-gray-400">¥{item.price.toLocaleString()}</p>
           </div>
-        <div className="flex items-center space-x-4 mb-6">
-          <p className="text-gray-500 text-sm mb-6 flex items-center">
-            <span className="bg-gray-100 px-2 py-1 rounded mr-2">カテゴリ</span>
-            {item.category_name || "未分類"}
-          </p>
-          <p className="text-gray-500 text-sm flex items-center">
-              <FiUser className="mr-1" />
-              <span className="font-bold mr-1">出品者:</span>
-              {item.seller_name || "不明"}
-          </p>
-        </div>
 
-          <div className="text-4xl font-extrabold text-gray-900 mb-8">¥{item.price.toLocaleString()}</div>
-          
-          <div className="bg-gray-50 p-6 rounded-xl mb-10 border border-gray-100">
-            <h3 className="font-bold mb-2 text-gray-700">商品説明</h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {item.description}
-            </p>
+          <div className="bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">商品説明</h2>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{item.description}</p>
+          </div>
+
+          <div className="flex items-center space-x-4 mb-8 p-4 border border-gray-100 rounded-2xl">
+             <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white">
+                <FiUser size={24} />
+             </div>
+             <div>
+                <p className="text-xs text-gray-400 font-bold">出品者</p>
+                <p className="font-bold text-gray-800">{item.seller_name || "不明なユーザー"}</p>
+             </div>
           </div>
 
           <div className="flex space-x-4 mb-16">
-            {/* ★修正: 出し分けロジック */}
-            {isMyItem ? (
-                // 自分の商品の場合
-                <button disabled className="flex-1 bg-gray-300 text-white font-bold py-4 rounded-full cursor-not-allowed flex items-center justify-center">
-                    あなたの商品です
-                </button>
-            ) : item.status === 'sold' ? (
-                // 売り切れの場合
-                <button disabled className="flex-1 bg-gray-400 text-white font-bold py-4 rounded-full cursor-not-allowed flex items-center justify-center">
-                    売り切れ
-                </button>
-            ) : (
-                // 購入可能な場合
-                <button onClick={handlePurchase} className="flex-1 bg-red-600 text-white font-bold py-4 rounded-full shadow-lg hover:bg-red-700 transition flex items-center justify-center transform hover:scale-[1.02]">
-                    <FiShoppingBag className="mr-2 text-xl" /> 購入手続きへ
-                </button>
-            )}
-            
-                <button 
-                  onClick={toggleLike}
-                  className={`p-4 rounded-full transition shadow-sm border border-gray-200 flex items-center justify-center ${
-                    isLiked ? 'bg-pink-50 text-pink-500 border-pink-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                  }`}
-              >
-                {/* いいね済なら塗りつぶしっぽく見せる */}
-                <FiHeart className={`text-2xl ${isLiked ? 'fill-current' : ''}`} />
-                </button>
+            {/* ★修正: 購入ボタンに処理を追加 */}
+            <button 
+              onClick={handlePurchase}
+              disabled={item.status === 'sold'}
+              className={`flex-1 py-4 rounded-full font-extrabold text-white shadow-xl transition flex items-center justify-center space-x-2 ${
+                item.status === 'sold' ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:-translate-y-1'
+              }`}
+            >
+              <FiShoppingBag />
+              <span>{item.status === 'sold' ? '売り切れました' : '購入手続きへ'}</span>
+            </button>
+
+            {/* ★追加: いいねボタンを実装 */}
+            <button 
+                onClick={toggleLike}
+                className={`p-4 rounded-full transition shadow-md border flex items-center justify-center ${
+                    isLiked ? 'bg-pink-50 text-pink-500 border-pink-200' : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50'
+                }`}
+            >
+              <FiHeart className={`text-2xl ${isLiked ? 'fill-current' : ''}`} />
+            </button>
           </div>
 
-          {/* --- AIレコメンドエリア --- */}
-          <div className="border-t pt-10">
-            <h3 className="text-xl font-bold mb-6 flex items-center text-gray-800">
+          {/* 関連商品エリア（元のコードを維持） */}
+          <div className="border-t border-gray-100 pt-8">
+            <h3 className="text-xl font-bold mb-6 flex items-center">
               <span className="text-2xl mr-2"></span>
               この商品を見ている人におすすめ
             </h3>
