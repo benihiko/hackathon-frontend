@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 // アイコンを追加
-import { FiClock, FiStar } from 'react-icons/fi';
+import { FiClock, FiStar, FiRss } from 'react-icons/fi';
 
 export default function HomePage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // ★追加: 現在のタブ状態 ('new' か 'recommend' か)
-  const [activeTab, setActiveTab] = useState<'new' | 'recommend'>('new');
+  // ★追加: 現在のタブ状態 ('new' か 'recommend' か)s
+  const [activeTab, setActiveTab] = useState<'new' | 'recommend' | 'following'>('new');
 
   useEffect(() => {
     // タブが切り替わるたびにローディングを出して再取得
@@ -37,7 +37,10 @@ export default function HomePage() {
       <div className="min-h-screen flex flex-col justify-center items-center bg-white">
         <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
         <p className="text-gray-500 font-bold animate-pulse">
-            {activeTab === 'new' ? '新着商品を読み込み中...' : 'あなたへのおすすめを選定中...'}
+            {/* ★ここを修正: 3パターンに対応させる */}
+            {activeTab === 'new' && '新着商品を読み込み中...'}
+            {activeTab === 'recommend' && 'あなたへのおすすめを選定中...'}
+            {activeTab === 'following' && 'フォロー中のタイムラインを取得中...'}
         </p>
       </div>
     );
@@ -81,7 +84,26 @@ export default function HomePage() {
             >
                 <FiStar className="mr-2"/> あなたへのおすすめ
             </button>
+
+            <button 
+                onClick={() => setActiveTab('following')}
+                className={`px-5 py-3 rounded-full font-bold transition flex items-center ${
+                    activeTab === 'following' 
+                    ? 'bg-cyan-600 text-white shadow-md' 
+                    : 'bg-white text-gray-500 hover:bg-gray-100'
+                }`}
+            >
+                <FiRss className="mr-2"/> フォロー中
+            </button>
         </div>
+
+        {/* メッセージ表示の分岐 */}
+        {activeTab === 'following' && items.length === 0 && !loading && (
+            <div className="text-center py-20 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl">
+                <p className="mb-2 text-lg font-bold">まだフォロー中のチャンネルの商品がありません</p>
+                <p className="text-sm">気になる商品の詳細ページから、チャンネルをフォローしてみましょう！</p>
+            </div>
+        )}
 
         {items.length === 0 ? (
           <div className="text-center py-20 text-gray-400 border-2 border-dashed border-gray-300 rounded-xl">
